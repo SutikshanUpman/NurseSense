@@ -47,9 +47,9 @@ RL is not used here because it is fashionable. It is used because the budget mak
 - **Actions:** `Ignore` or `Alert`.
 - **Alert budget:** a parameter (swept from 1 to 10). It is a *soft* limit: extra alerts cost more but are not forbidden, and an extreme reading triggers a safety override.
 
-**What the agent sees (about 5 numbers):**
+**What the agent sees (4 numbers):**
 
-1. Deviation from the patient's rolling 3-hour baseline
+1. Deviation from the patient's rolling 3-hour baseline (each episode starts with the preceding 3 hours of readings, so the baseline exists from step 0)
 2. Trend (slope), so slow drifts are not hidden by the baseline
 3. Alerts remaining
 4. Time since the last alert
@@ -62,20 +62,21 @@ RL is not used here because it is fashionable. It is used because the budget mak
 - False alert: small penalty, growing with fatigue
 - Missed emergency: large penalty (otherwise the agent learns to ignore everything)
 
+Reward weights are swept, not tuned once. The miss-rate gate in Section 6 is the judge, so an agent cannot "win" by exploiting a reward weighting.
+
 ## 5. Approaches compared
 
 1. **Fixed threshold:** population-style cutoff.
 2. **Tuned budget-aware rule:** threshold chosen by grid search, adjusted by alerts remaining.
 3. **DQN:** small neural network (about 2 layers x 64 units), trained from scratch on CPU. Weights are frozen after training.
-
-*Planned later (Phase 4):* an oracle that sees the future, used as an upper bound.
+4. **Oracle:** sees the future, used as an upper bound so any gap between agents can be judged against the ceiling.
 
 ## 6. How success is measured
 
 - **Gate:** missed emergencies must be 5% or lower. Agents that miss more are not ranked.
 - **Win condition:** fewer false alerts per night at that same miss rate.
 - **Also reported:** detection delay (time from onset to alert).
-- **Evaluation:** 3-5 random seeds, with the budget swept from 1 to 10.
+- **Evaluation:** 5 random seeds, mean and spread reported, with the budget swept from 1 to 10.
 
 *In plain words: same safety, less noise.*
 
@@ -83,10 +84,10 @@ RL is not used here because it is fashionable. It is used because the budget mak
 
 *Not yet available.* This section will hold:
 
-- False alerts vs. budget, rule vs. DQN
+- False alerts vs. budget: fixed rule, tuned rule, DQN, oracle
 - The budget range where RL helps, and where it does not
 
-No numbers are claimed until they are measured.
+No numbers are claimed until they are measured. A result where the tuned rule matches DQN is reported as a finding, not hidden.
 
 ## 8. Limitations
 
@@ -100,9 +101,9 @@ No numbers are claimed until they are measured.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Hackathon environment and LLM agent (team) | Done |
-| 2 | Minimal rebuild: simulator, two rule baselines | Planned |
-| 3 | Train DQN, compare against rules, budget sweep | Planned |
-| 4 | Harden results: oracle, multiple seeds, reward sensitivity | Planned |
+| 2 | Minimal rebuild: simulator, two rule baselines, headroom check (does the tuned rule leave a gap to the oracle? if not, make the simulator harder before training DQN) | Planned |
+| 3 | Train DQN, add oracle upper bound, compare against rules, budget sweep | Planned |
+| 4 | Harden results: 5 seeds with variance, reward and fatigue-model sensitivity | Planned |
 | 5 | Optional: activity context, multi-patient triage, local LLM baseline, noisy sensors | Optional |
 
 Phase 5 is not started until Phase 4 is complete.
